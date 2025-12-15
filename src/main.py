@@ -6,7 +6,7 @@ Testar se o torch já funciona e depois refatoro o código
 # primeiro commit sempre é para teste
 
 import cv2
-from cvzone.HandTrackingModulo import HandDetector
+from cvzone.HandTrackingModule import HandDetector
 import torch
 import time
 
@@ -103,7 +103,7 @@ def menu():
     return choice
 
 def main():
-    while true:
+    while True:
         opcao = menu()
 
         if opcao == "1":
