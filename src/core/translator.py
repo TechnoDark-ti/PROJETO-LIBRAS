@@ -2,7 +2,7 @@
 
 import numpy as np
 
-class LibrasTranslator:
+class Translator:
     def __init__(self):
         """
         Inicializa o tradutor baseado em regras.
