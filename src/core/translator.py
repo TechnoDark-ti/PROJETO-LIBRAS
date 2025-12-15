@@ -34,8 +34,8 @@ class LibrasTranslator:
         tipos = [8, 12, 16, 20]
         bases = [6, 10, 14, 18]
 
-        for tipo, base in zip(tips, bases):
-            fingers.append(1 if lm[tip][1] < lm[base] else 0)
+        for tipo, base in zip(tipos, bases):
+            fingers.append(1 if lm[tipos][1] < lm[base] else 0)
 
         fingers.insert(
             0,
