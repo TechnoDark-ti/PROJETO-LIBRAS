@@ -93,6 +93,26 @@ class MainApp:
             self.history_panel
         )
         self.page.update()
+    
+    def update_ui_with_data(self, current_signal: str, confirmed_signal: str, translated_text: str, history: list):
+        """
+        Método chamado pelo thread do Core para atualizar a interface.
+        """
+        # Atualizar o estado da UI com os dados do Core
+        self.current_signal = current_signal
+        self.translated_text = translated_text
+        self.history = history
+
+        self.output_column.controls[1].content.controls[1].value = translated_text
+        # Atualizar a área de Sinal em Classificação
+        self.output_column.controls[2].content.controls[1].value = current_signal
+        
+        # Recriar o painel de histórico (mais simples que atualizar a lista de controls)
+        self.history_panel.controls[1] = create_detection_history(history)
+        
+        # Forçar a atualização da UI
+        self.page.update()
+
 
 def start_app(target_main):
     """
