@@ -9,6 +9,7 @@ import time
 import config
 import os
 import sys
+import flet as ft
 
 # Chamando todos os módulos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
@@ -20,8 +21,11 @@ from core.signal_classifier import SignalClassifier # NOVO MÓDULO INCLUÍDO
 from core.signal_buffer import SignalBuffer
 from core.translator import Translator
 
+# Importação da GUI
+from ui.app import MainApp, start_app # Launcher da UI
 
-def main():
+
+def Sistema_Libras():
     print("Iniciando Sistema de Tradução Libras")
     
     # 1. Inicialização dos módulos (agora com 5 classes no Core)
@@ -102,5 +106,46 @@ def main():
         print("Sistema encerrado.")
 
 
+def main(page: ft.Page):
+    # Inicialização dos módulos do core (continuam aqui!)
+    camera = Camera()
+    hand_tracker = HandTracker()
+    signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
+    signal_buffer = SignalBuffer(size=config.BUFFER_SIZE, min_confidence=config.MIN_CONFIDENCE)
+    translator = Translator() 
+    
+    # Inicializa a UI
+    app = MainApp(page)
+
+    
+    # ------------------------------------------------------------------------
+    # MODO SIMULADO / LOOP DE PRODUÇÃO
+    # ------------------------------------------------------------------------
+    
+    if not config.USE_CAMERA:
+        # Se estiver em modo simulação, o MainApp pode mostrar os dados simulados
+        
+        # Exemplo: atualizando a UI com o resultado da simulação
+        for sign in config.SIMULATED_SIGNS:
+            # ... (Lógica da simulação anterior) ...
+            
+            # ATUALIZAÇÃO DA UI (Novo passo!)
+            app.current_signal = sign
+            
+            # Aqui teremos uma função para forçar o loop da Flet a atualizar
+            # app.update_ui_with_data(current_signal, confirmed_signal, translated_text)
+            
+            time.sleep(0.05) 
+            
+        return
+
+    # ------------------------------------------------------------------------
+    # MODO REAL (Loop de Visão Computacional)
+    # ------------------------------------------------------------------------
+    
+    # ... (O loop real de processamento do frame e envio para a UI) ...
+    
+    # ... (código do try/except/finally) ...
+
 if __name__ == "__main__":
-    main()
+    start_app(target_main=main)
