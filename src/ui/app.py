@@ -21,14 +21,22 @@ class MainApp:
         self._build_ui()
 
     def _build_ui(self):
-        # ----------------------------------------------------
+
         # 1. Painel da Câmera / Detecção
-        # ----------------------------------------------------
+        # ---
+        # NOVO: Inicializa o controle Image que será o feed de vídeo
+        self.image_control = ft.Image(
+            src_base64=None, # Começa sem imagem
+            width=500,
+            height=400,
+            fit=ft.ImageFit.CONTAIN # Garante que a imagem se ajuste
+        )
+        
         self.video_area = ft.Container(
             width=500,
             height=400,
-            # Placeholder para a área de vídeo/captura (CVZone/OpenCV será injetado aqui)
-            content=ft.Text("Área de Captura de Sinais (Webcam / Flet Frame)"), 
+            # Placeholder para a área de vídeo/captura
+            content=self.image_control, # AGORA CONTÉM O CONTROLE IMAGE
             alignment=ft.alignment.center,
             bgcolor=ft.Colors.BLACK,
             border_radius=10,
@@ -94,7 +102,7 @@ class MainApp:
         )
         self.page.update()
     
-    def update_ui_with_data(self, current_signal: str, confirmed_signal: str, translated_text: str, history: list):
+    def update_ui_with_data(self, current_signal: str, translated_text: str, history: list, frame_bytes: bytes = None):
         """
         Método chamado pelo thread do Core para atualizar a interface.
         """
@@ -109,6 +117,10 @@ class MainApp:
         
         # Recriar o painel de histórico (mais simples que atualizar a lista de controls)
         self.history_panel.controls[1] = create_detection_history(history)
+        
+        if frame_bytes:
+            # Flet espera a imagem em base64, mas o Image control aceita bytes diretamente em src_base64
+            self.image_control.src_base64 = frame_bytes
         
         # Forçar a atualização da UI
         self.page.update()
