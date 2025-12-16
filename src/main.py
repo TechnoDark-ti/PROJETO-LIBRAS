@@ -45,7 +45,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     # ------------------------------------------------------------------------
 
     if not config.USE_CAMERA:
-        print("⚠️ Thread de Processamento: Modo Simulado Ativado")
+        print("Thread de Processamento: Modo Simulado Ativado")
 
         # 1. Definindo a sequência de simulação (para teste de buffer visual)
         simulated_signs = config.SIMULATED_SIGNS + ["Nenhum"] * 5
@@ -62,13 +62,13 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
                 local_history.append(confirmed_signal)
             
             # NOVO: Gera e converte o frame Mock para visualização no Flet
-            mock_frame = camera.get_mock_frame() 
+            mock_frame = Camera.get_mock_frame() 
             frame_bytes = cv2_to_flet_image(mock_frame)
             
             # SINCRONIZAÇÃO: Envia os dados e o FRAME para a UI
             ui_callback(
                 current_signal=current_signal,
-                confirmed_signal=confirmed_signal, # Adicionado para debug
+                #confirmed_signal=confirmed_signal, # Adicionado para debug
                 translated_text=translated_text,
                 history=local_history.copy(),
                 frame_bytes=frame_bytes
@@ -76,7 +76,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
             
             time.sleep(0.5) 
             
-        print("🏁 Simulação finalizada.")
+        print("Simulação finalizada.")
         return # Finaliza a thread após a simulação
         
 
@@ -116,7 +116,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
 
             ui_callback(
                 current_signal=current_signal,
-                confirmed_signal=confirmed_signal,
+                #confirmed_signal=confirmed_signal,
                 translated_text=translated_text,
                 history=local_history.copy(),
                 frame_bytes=frame_bytes
