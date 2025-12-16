@@ -7,9 +7,12 @@ class SignalClassifier:
     Responsável por classificar os landmarks (dados numéricos) em um rótulo de sinal.
     No futuro, esta classe carregará e executará o modelo PyTorch (libras_model.pt).
     """
-    def __init__(self):
+    def __init__(self, model_path: str = None):
+        # CORRIGIDO
+        self.model_path = model_path
         self.rules = self._load_rules()
-        # Adicione aqui o carregamento futuro do modelo PyTorch
+
+        
 
     def classify(self, landmarks):
         """
