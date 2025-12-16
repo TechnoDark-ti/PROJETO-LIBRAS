@@ -1,7 +1,9 @@
+# core/hand_tracker.py
+
 """
 Entrada: frame (OpenCV)
 Processo: detecção + landmarks
-Sa´da: Estrutura de dados padroniz#da
+Saída: Estrutura de dados padronizada
 """
 
 import cv2
@@ -16,11 +18,14 @@ class HandTracker:
             tracking_confidence = 0.6
             ):
         
-        """Inicalizado o dedtect de mãos usando CVZONE (MediaPipe)"""
-        self.dedector = HandDetector(
+        """Inicializa o detector de mãos usando CVZONE (MediaPipe)"""
+        # CORREÇÃO 1: Renomeado para self.detector
+        self.detector = HandDetector(
             staticMode=static_mode,
             maxHands=max_hands,
-            detectionCon=detection_confidence,
+            # minTrackCon e detectionCon estavam invertidos no código anterior, mas aqui mantemos
+            # o seu código original. O CVZone usa detectionCon (detecção) e minTrackCon (rastreio)
+            detectionCon=detection_confidence, 
             minTrackCon=tracking_confidence,
         )
 
@@ -30,14 +35,16 @@ class HandTracker:
             return [], None
         
         try:
-            hands, annotated_frame = self.dedector.findDistance(
+            # CORREÇÃO 2: Alterado de findDistance para findHands (método correto para detecção)
+            hands, annotated_frame = self.detector.findHands( 
                 frame, draw=True
             )
-            return hands, annotated_frame
+            # findHands retorna (lista_de_maos, frame_com_desenho)
+            return hands, annotated_frame 
         except Exception:
+            # Em caso de falha na detecção (ex: erro no MediaPipe), retorna dados vazios
             return [], frame
         
-
 
     def extract_landmarks(self, hand):
         if not hand or "lmList" not in hand:
