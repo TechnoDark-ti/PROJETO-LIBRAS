@@ -26,4 +26,10 @@ def cv2_to_flet_image(frame: np.ndarray) -> str:
     img_pil.save(byte_io, format='jpeg')
     
     # Retorna o conteúdo do buffer
-    return byte_io.getvalue()
+    #return byte_io.getvalue()
+
+    #5. NOVO: Codifica os bytes JPEG para Base64
+    base64_bytes = base64.b64encode(byte_io.getvalue())
+    
+    # 6. Decodifica para string e retorna.
+    return base64_bytes.decode('utf-8')
