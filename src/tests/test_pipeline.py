@@ -1,4 +1,7 @@
-import unittest
+import unittest, sys, os
+
+#Solução para chamar os outros modulos fora de test
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..', '..', 'src')))
 
 from core.signal_buffer import SignalBuffer
 from core.translator import Translator
@@ -7,31 +10,19 @@ from core.translator import Translator
 class TestPipeline(unittest.TestCase):
 
     def setUp(self):
-        self.buffer = SignalBuffer(
-            buffer_size=5,
-            confidence_threshold=0.6
-        )
+        self.buffer = SignalBuffer(size=5, min_confidence=0.6)
 
         self.translator = Translator()
 
     def test_pipeline_translation(self):
-        """
-        Simula um fluxo completo:
-        sinal bruto -> buffer -> tradução
-        """
-
         simulated_signals = [
-            ("A", 0.92),
-            ("A", 0.93),
-            ("A", 0.91),
-            ("A", 0.95),
-            ("A", 0.94),
+        "A", "A", "A", "A", "A"
         ]
 
         stable_signal = None
 
-        for signal, confidence in simulated_signals:
-            result = self.buffer.add(signal, confidence)
+        for signal in simulated_signals:
+            result = self.buffer.update(signal)
             if result:
                 stable_signal = result
 
