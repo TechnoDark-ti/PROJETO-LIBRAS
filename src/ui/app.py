@@ -11,7 +11,7 @@ class MainApp:
         self.page.horizontal_alignment = ft.CrossAxisAlignment.START
         self.page.window_width = 1000
         self.page.window_height = 700
-        self.page.bgcolor = ft.colors.WHITE
+        self.page.bgcolor = ft.Colors.WHITE
         
         # Estado inicial (Simulado)
         self.current_signal = "N/A"
@@ -30,7 +30,7 @@ class MainApp:
             # Placeholder para a área de vídeo/captura (CVZone/OpenCV será injetado aqui)
             content=ft.Text("Área de Captura de Sinais (Webcam / Flet Frame)"), 
             alignment=ft.alignment.center,
-            bgcolor=ft.colors.BLACK,
+            bgcolor=ft.Colors.BLACK,
             border_radius=10,
             margin=ft.margin.only(right=15)
         )
@@ -46,22 +46,22 @@ class MainApp:
                 create_output_panel(
                     title="Tradução Final",
                     content_text=self.translated_text,
-                    color=ft.colors.CYAN_100
+                    color=ft.Colors.CYAN_100
                 ),
                 
                 # Sinal Atual (em Buffer)
                 create_output_panel(
                     title="Sinal em Classificação",
                     content_text=self.current_signal,
-                    color=ft.colors.INDIGO_100
+                    color=ft.Colors.INDIGO_100
                 ),
                 
                 ft.Divider(height=20),
                 
                 # Controles (Placeholder para botões de Start/Stop)
                 ft.Row([
-                    ft.ElevatedButton("INICIAR CÂMERA", bgcolor=ft.colors.GREEN_500, color=ft.colors.WHITE),
-                    ft.ElevatedButton("RESET BUFFER", bgcolor=ft.colors.RED_500, color=ft.colors.WHITE),
+                    ft.ElevatedButton("INICIAR CÂMERA", bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE),
+                    ft.ElevatedButton("RESET BUFFER", bgcolor=ft.Colors.RED_500, color=ft.Colors.WHITE),
                 ]),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.START,
