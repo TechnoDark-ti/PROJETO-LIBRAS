@@ -55,16 +55,22 @@ class Camera:
         self.is_running = False
 
     @staticmethod
-    def get_mock_fram(width=640, height=480):
+    def get_mock_frame(width=640, height=480):
+        """
+        Gera um frame simulado (preto ou cinza) para uso quando a webcam não está disponível.
+        Retorna um array NumPy.
+        """
+        # Cria um frame preto
         mock_frame = np.zeros((height, width, 3), dtype=np.uint8)
-        # Opcional: Desenhar um texto para debug
+        
+        # Desenha texto para debug
         cv2.putText(
             mock_frame,
-            "CAMERA MOCK ATIVA",
+            "MOCK CAM ATIVA",
             (50, 50),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
-            (255, 255, 255),
+            (255, 255, 255), # Cor branca
             2,
         )
         return mock_frame
