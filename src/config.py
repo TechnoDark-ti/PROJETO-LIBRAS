@@ -1,7 +1,7 @@
 # config.py
 
-DEBUG_MODE = True
-USE_CAMERA = False
+DEBUG_MODE = False
+USE_CAMERA = True
 
 BUFFER_SIZE = 7
 MIN_CONFIDENCE = 0.7
