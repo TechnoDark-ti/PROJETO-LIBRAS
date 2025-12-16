@@ -1,17 +1,16 @@
 import cv2
 import io
 import numpy as np
+import base64
 
 from PIL import Image
 
-def cv2_to_flet_image(frame: np.ndarray) -> bytes:
+def cv2_to_flet_image(frame: np.ndarray) -> str:
     """
-    Converte um frame OpenCV (NumPy array) para bytes JPEG.
-    :param frame: O frame anotado pelo HandTracker.
-    :return: Bytes do frame no formato JPEG.
+    Converte um frame OpenCV (NumPy array) para uma string Base64.
     """
     if frame is None:
-        return b''
+        return ""
     
     # O OpenCV usa BGR; Flet/PIL/JPEG prefere RGB.
     # Esta conversão é opcional, mas garante cores corretas.
