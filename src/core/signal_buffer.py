@@ -1,3 +1,5 @@
+# core/signal_buffer.py
+
 from collections import deque, Counter
 
 class SignalBuffer:
@@ -19,14 +21,15 @@ class SignalBuffer:
             return None
     
         counter = Counter(self.buffer)
-        most_comon, count = counter.most_common(1)[0]
+        # CORREÇÃO: Variável most_comon corrigida para most_common
+        most_common, count = counter.most_common(1)[0] 
 
         confidence = count / len(self.buffer)
 
         if confidence >= self.min_confidence:
-            if most_comon != self.last_confirmed:
-                self.last_confirmed = most_comon
-                return most_comon
+            if most_common != self.last_confirmed:
+                self.last_confirmed = most_common
+                return most_common
         return None
 
     def reset(self):
