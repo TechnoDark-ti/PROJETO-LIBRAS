@@ -4,4 +4,6 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 
 #sudo apt install python3-pip python3-virtualenv -y
 sudo apt install -y libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-                    libmpv-dev mpv
+                    libmpv-dev mpv libmpv2
+
+sudo ln -s /usr/lib/x86_64-linux-gnu/libmpv.so /usr/lib/libmpv.so.1 
