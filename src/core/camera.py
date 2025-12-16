@@ -1,3 +1,4 @@
+import numpy as np
 import cv2
 
 class Camera:
@@ -52,3 +53,18 @@ class Camera:
             self.cap = None
 
         self.is_running = False
+
+    @staticmethod
+    def get_mock_fram(width=640, height=480):
+        mock_frame = np.zeros((height, width, 3), dtype=np.uint8)
+        # Opcional: Desenhar um texto para debug
+        cv2.putText(
+            mock_frame,
+            "CAMERA MOCK ATIVA",
+            (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2,
+        )
+        return mock_frame
