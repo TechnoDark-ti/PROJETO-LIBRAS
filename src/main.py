@@ -10,6 +10,7 @@ import config
 import os
 import sys
 import flet as ft
+import threading
 
 # Chamando todos os módulos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
@@ -25,47 +26,61 @@ from core.translator import Translator
 from ui.app import MainApp, start_app # Launcher da UI
 
 
-def Sistema_Libras():
-    print("Iniciando Sistema de Tradução Libras")
-    
-    # 1. Inicialização dos módulos (agora com 5 classes no Core)
-    camera = Camera()
-    hand_tracker = HandTracker()
-    
-    # CORREÇÃO 1: Instanciando o SignalClassifier (que usará o PyTorch/Regras)
-    signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
-    
-    signal_buffer = SignalBuffer(
-        size=config.BUFFER_SIZE,
-        min_confidence=config.MIN_CONFIDENCE
-    )
-    
-    # CORREÇÃO 2: O Translator não precisa de argumentos de modelo (.pt)
-    translator = Translator() 
+# ------------------------------------------------------------------------
+# 1. FUNÇÃO DE PROCESSAMENTO PESADO (Executada em um thread separado)
+# ------------------------------------------------------------------------
 
+def processing_loop(
+    camera, hand_tracker, signal_classifier, signal_buffer, translator, ui_callback
+):
+    """
+    Loop principal que executa o pipeline de visão computacional.
+    Roda em um thread separado para não bloquear a UI.
+    """
     
-    # 2. Modo Simulado (Ativado via config.py)
+    # Histórico Local: O thread deve manter o histórico
+    local_history = [] 
+
+    # Se a câmera real não for usada, entramos em modo de simulação
     if not config.USE_CAMERA:
-        print("Modo Simulado Ativado: Usando lista de sinais para teste do Pipeline.")
+        print("Thread de Processamento: Modo Simulado Ativado")
         
-        for sign in config.SIMULATED_SIGNS: # Correção de SIMULATED_SIGN para SIMULATED_SIGNS
-            print(f"[DEBUG] Sinal Bruto Detectado: {sign}")
-
-            # O Buffer atualiza o sinal, garantindo estabilidade
-            confirmed_signal = signal_buffer.update(sign) 
-
-            if confirmed_signal:
-                # O Translator traduz o sinal estável para texto
-                translated_text = translator.translate(confirmed_signal) 
-                print(f"Sinal Confirmado (Estável): {confirmed_signal} -> Tradução: {translated_text}")
+        # Simulação de frames e sinais para teste de pipeline visual e lógico
+        simulated_signs = config.SIMULATED_SIGNS + ["Nenhum"] * 5
+        
+        for sign in simulated_signs:
             
-            time.sleep(0.05) # Pequeno delay para simular frames
-        
-        print("Simulação finalizada com sucesso.")
-        return
+            # --- SIMULAÇÃO DA DETECÇÃO ---
+            current_signal = sign
+            
+            # (No modo real, o classifier nos daria o current_signal)
+            
+            # --- PROCESSAMENTO DO CORE ---
+            confirmed_signal = signal_buffer.update(current_signal)
+            translated_text = translator.translate(confirmed_signal)
+            
+            if confirmed_signal:
+                local_history.append(confirmed_signal)
+                
+            # ----------------------------------------------------------------
+            # SINCRONIZAÇÃO: Envia os dados para a UI
+            # ----------------------------------------------------------------
+            ui_callback(
+                current_signal=current_signal,
+                confirmed_signal=confirmed_signal,
+                translated_text=translated_text,
+                history=local_history.copy()
+            )
+            
+            time.sleep(0.5) # Simula o tempo de processamento por frame (500ms)
 
+        print("Simulação finalizada.")
+        return # Thread termina após a simulação
+    
 
-    # 3. Loop Principal (Ativado apenas se config.USE_CAMERA = True)
+    # ------------------------------------------------------------------------
+    # MODO REAL (Webcam Ativa)
+    # ------------------------------------------------------------------------
     
     try:
         camera.start()
@@ -74,78 +89,65 @@ def Sistema_Libras():
         while True:
             frame = camera.read()
             if frame is None:
-                continue
+                # Se não houver frame, tenta usar o mock (se permitido) ou continua
+                continue 
 
             # PIPELINE DE 5 CAMADAS:
-            
-            # 1. HAND TRACKING
             hands, annotated_frame = hand_tracker.process(frame)
+            current_signal = "Nenhum"
             
-            # 2. CLASSIFICATION (Somente se houver mãos)
-            signal = "Nenhum"
             if hands:
                 landmarks = hand_tracker.extract_landmarks(hands[0])
-                signal = signal_classifier.classify(landmarks)
+                current_signal = signal_classifier.classify(landmarks)
             
-            # 3. BUFFER
-            confirmed_signal = signal_buffer.update(signal)
-
-            # 4. TRANSLATION & OUTPUT
+            confirmed_signal = signal_buffer.update(current_signal)
+            translated_text = translator.translate(confirmed_signal)
+            
             if confirmed_signal:
-                translated_text = translator.translate(confirmed_signal)
-                # print(f"Output: {translated_text}") # Aqui será enviada a UI
+                local_history.append(confirmed_signal)
+
+            # SINCRONIZAÇÃO (Enviar dados e frame para a UI)
+            ui_callback(
+                current_signal=current_signal,
+                confirmed_signal=confirmed_signal,
+                translated_text=translated_text,
+                history=local_history.copy(),
+                # frame=annotated_frame # Futuramente, o frame será enviado aqui
+            )
             
-            # (FUTURO) Exibir annotated_frame via Flet ou OpenCV
+            # A thread real precisa de um pequeno controle de FPS (não é necessário time.sleep)
             
     except RuntimeError as e:
-        print(f"ERRO FATAL: {e}")
-    except KeyboardInterrupt:
-        print("\nPrograma interrompido pelo usuário.")
+        print(f"ERRO FATAL (Core): {e}")
+    except Exception as e:
+        print(f"Erro inesperado no thread de processamento: {e}")
     finally:
         camera.stop()
-        print("Sistema encerrado.")
-
+        print("Thread de processamento encerrado.")
 
 def main(page: ft.Page):
-    # Inicialização dos módulos do core (continuam aqui!)
+    print("Flet UI Iniciada.")
+    
+    # 1. Inicialização dos módulos do core (continuam aqui!)
     camera = Camera()
     hand_tracker = HandTracker()
     signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
     signal_buffer = SignalBuffer(size=config.BUFFER_SIZE, min_confidence=config.MIN_CONFIDENCE)
     translator = Translator() 
     
-    # Inicializa a UI
+    # 2. Inicializa a UI (Cria a instância da MainApp)
     app = MainApp(page)
-
     
-    # ------------------------------------------------------------------------
-    # MODO SIMULADO / LOOP DE PRODUÇÃO
-    # ------------------------------------------------------------------------
+    # 3. Define a função de callback que o thread vai usar para se comunicar
+    ui_callback_func = app.update_ui_with_data
     
-    if not config.USE_CAMERA:
-        # Se estiver em modo simulação, o MainApp pode mostrar os dados simulados
-        
-        # Exemplo: atualizando a UI com o resultado da simulação
-        for sign in config.SIMULATED_SIGNS:
-            # ... (Lógica da simulação anterior) ...
-            
-            # ATUALIZAÇÃO DA UI (Novo passo!)
-            app.current_signal = sign
-            
-            # Aqui teremos uma função para forçar o loop da Flet a atualizar
-            # app.update_ui_with_data(current_signal, confirmed_signal, translated_text)
-            
-            time.sleep(0.05) 
-            
-        return
-
-    # ------------------------------------------------------------------------
-    # MODO REAL (Loop de Visão Computacional)
-    # ------------------------------------------------------------------------
-    
-    # ... (O loop real de processamento do frame e envio para a UI) ...
-    
-    # ... (código do try/except/finally) ...
+    # 4. Inicia o thread de processamento (passando os módulos e a função de callback)
+    processing_thread = threading.Thread(
+        target=processing_loop,
+        args=(camera, hand_tracker, signal_classifier, signal_buffer, translator, ui_callback_func),
+        daemon=True # Garante que o thread morra se o app principal fechar
+    )
+    processing_thread.start()
 
 if __name__ == "__main__":
     start_app(target_main=main)
