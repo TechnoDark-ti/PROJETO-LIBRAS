@@ -1,7 +1,7 @@
 # ui/app.py
 
 import flet as ft
-from ui.components import create_detection_history, create_output_panel
+from ui.components import create_detection_history, create_output_panel, create_confidence_bar
 
 class MainApp:
     def __init__(self, page: ft.Page):
@@ -16,7 +16,12 @@ class MainApp:
         # Estado inicial (Simulado)
         self.current_signal = "N/A"
         self.translated_text = "Nenhuma tradução."
-        self.history = ["A", "A", "B", "L", "A", "L"] # Lista de exemplo
+        self.history = ["Nenh"]
+        self.confidence_value = 0.0
+
+        #Handers que serão definidos pelo main (thread)
+        self.start_handle = lambda e: None
+        self.reset_handle = lambda e: None
 
         self._build_ui()
 
@@ -46,6 +51,9 @@ class MainApp:
         # ----------------------------------------------------
         # 2. Painel Lateral de Saída
         # ----------------------------------------------------
+        self.start_button = ft.ElevatedButton("INICIAR CAMERA", bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE)
+        self.reset_button = ft.ElevatedButton("RESET BUFFER", bgcolor=ft.Colors.RED_500, color=ft.Colors.WHITE)
+
         self.output_column = ft.Column(
             controls=[
                 ft.Text("OUTPUT DO SISTEMA", size=18, weight=ft.FontWeight.BOLD),
@@ -66,10 +74,10 @@ class MainApp:
                 
                 ft.Divider(height=20),
                 
-                # Controles (Placeholder para botões de Start/Stop)
+                # Controles
                 ft.Row([
-                    ft.ElevatedButton("INICIAR CÂMERA", bgcolor=ft.Colors.GREEN_500, color=ft.Colors.WHITE),
-                    ft.ElevatedButton("RESET BUFFER", bgcolor=ft.Colors.RED_500, color=ft.Colors.WHITE),
+                    self.start_button,
+                    self.reset_button,
                 ]),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.START,
@@ -79,6 +87,8 @@ class MainApp:
         # ----------------------------------------------------
         # 3. Painel de Histórico (Rodapé)
         # ----------------------------------------------------
+        self.confidence_bar = create_confidence_bar(self.confidence_value)
+        
         self.history_panel = ft.Column(
             controls=[
                 ft.Text("HISTÓRICO DE SINAIS ESTÁVEIS", size=16, weight=ft.FontWeight.BOLD),
@@ -102,17 +112,20 @@ class MainApp:
         )
         self.page.update()
     
-    def update_ui_with_data(self, current_signal: str, translated_text: str, history: list, frame_bytes: bytes = None):
+    def update_ui_with_data(self, current_signal: str, translated_text: str, history: list, frame_bytes: bytes, confidence: float):
         """
         Método chamado pelo thread do Core para atualizar a interface.
+        """
+        self.confidence_bar.controls[1].value = confidence
+
         """
         # Atualizar o estado da UI com os dados do Core
         self.current_signal = current_signal
         self.translated_text = translated_text
         self.history = history
+        """
 
         self.output_column.controls[1].content.controls[1].value = translated_text
-        # Atualizar a área de Sinal em Classificação
         self.output_column.controls[2].content.controls[1].value = current_signal
         
         # Recriar o painel de histórico (mais simples que atualizar a lista de controls)
@@ -124,7 +137,12 @@ class MainApp:
         
         # Forçar a atualização da UI
         self.page.update()
+    
+    def set_handlers(self, start_func, reset_func):
+        self.start_handle.on_click = start_func
+        self.reset_handle.on_click = reset_func
 
+        self.page.update() 
 
 def start_app(target_main):
     """
