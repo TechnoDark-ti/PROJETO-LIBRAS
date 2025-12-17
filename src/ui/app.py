@@ -118,12 +118,12 @@ class MainApp:
         """
         self.confidence_bar.controls[1].value = confidence
 
-        """
+        
         # Atualizar o estado da UI com os dados do Core
         self.current_signal = current_signal
         self.translated_text = translated_text
         self.history = history
-        """
+    
 
         self.output_column.controls[1].content.controls[1].value = translated_text
         self.output_column.controls[2].content.controls[1].value = current_signal
