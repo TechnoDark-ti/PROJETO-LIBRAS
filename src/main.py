@@ -3,8 +3,6 @@
 This code is Licensed by GPL V.3
 """
 
-# main.py
-
 import time
 import config
 import os
@@ -13,16 +11,16 @@ import flet as ft
 import threading
 import numpy as np
 
-# Chamando todos os módulos
+# Chamando todos os módulos (gambiarra do python, c/java/c++ fazem isso nativamente, python é uma linguaguem porca)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
 # Importação dos 5 módulos do CORE
 from core.camera import Camera
 from core.hand_tracker import HandTracker
-from core.signal_classifier import SignalClassifier # NOVO MÓDULO INCLUÍDO
+from core.signal_classifier import SignalClassifier
 from core.signal_buffer import SignalBuffer
 from core.translator import Translator
-from core.utils import cv2_to_flet_image # Novo import
+from core.utils import cv2_to_flet_image
 
 # Importação da GUI
 from ui.app import MainApp, start_app # Launcher da UI
