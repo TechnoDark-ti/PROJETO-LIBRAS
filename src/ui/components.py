@@ -71,7 +71,7 @@ def create_output_panel(title: str, content_text: str = "", color=ft.Colors.BLUE
 def create_confidence_bar(value: float):
     return ft.Column(
         controls=[
-            ft.Text("Confiança do Sinal", size=12, color=ft.Colors.BACK54),
+            ft.Text("Confiança do Sinal", size=12, color=ft.Colors.BLACK54),
             ft.ProgressBar(
                 value=value,
                 width=500,
