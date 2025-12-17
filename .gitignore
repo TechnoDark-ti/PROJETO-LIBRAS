@@ -152,6 +152,7 @@ cython_debug/
 *.bin
 *.pyc
 *.__cache__
+*.cfg
 
 bin/*
 lib/*
