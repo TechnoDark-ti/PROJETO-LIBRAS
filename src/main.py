@@ -35,7 +35,8 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     Loop principal que executa o pipeline de visão computacional.
     Roda em um thread separado para não bloquear a UI.
     """
-    
+    count = signal_buffer.buffer.count(current_signal)
+    confidence_val = count / signal_buffer.buffer.maxlen if signal_buffer.buffer.maxlen > 0 else 0
     local_history = [] 
     
     # ------------------------------------------------------------------------
@@ -117,7 +118,8 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
                 #confirmed_signal=confirmed_signal,
                 translated_text=translated_text,
                 history=local_history.copy(),
-                frame_bytes=frame_bytes
+                frame_bytes=frame_bytes,
+                confidence=confidence_val
             )
             
             # time.sleep(1/30) # Opcional: controle de FPS
@@ -129,6 +131,11 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     finally:
         camera.stop()
         print("Thread de processamento encerrado.")
+
+def reset_buffer_handler(e, signal_buffer_instance):
+    """ Handler para o botão 'RESET BUFFER' (Refazer). """
+    result = signal_buffer_instance.reset()
+    print(f"[AÇÃO] Buffer resetado: {result}")
 
 def main(page: ft.Page):
     print("Flet UI Iniciada.")
@@ -145,6 +152,13 @@ def main(page: ft.Page):
     
     # 3. Define a função de callback que o thread vai usar para se comunicar
     ui_callback_func = app.update_ui_with_data
+
+    def start_handler(e):
+        # [FUTURO]: Lógica para parar/iniciar o thread de processamento
+        print("[AÇÃO] Botão INICIAR/PAUSAR clicado.")
+    
+    reset_handler_with_args = lambda e: reset_buffer_handler(e, signal_buffer)
+    app.set_handlers(start_handler, reset_handler_with_args) # NOVO MÉTODO CHAMADO
     
     # 4. Inicia o thread de processamento (passando os módulos e a função de callback)
     processing_thread = threading.Thread(
