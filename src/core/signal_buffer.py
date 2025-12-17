@@ -35,3 +35,5 @@ class SignalBuffer:
     def reset(self):
         self.buffer.clear()
         self.last_confirmed = None
+
+        return True 
