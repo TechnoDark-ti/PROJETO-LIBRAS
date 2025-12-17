@@ -1,5 +1,6 @@
 # config.py
 
+# Aqui é a minha gambiarra para ativar a camera
 DEBUG_MODE = False
 USE_CAMERA = True
 
