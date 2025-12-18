@@ -35,8 +35,6 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     Loop principal que executa o pipeline de visão computacional.
     Roda em um thread separado para não bloquear a UI.
     """
-    count = signal_buffer.buffer.count(current_signal)
-    confidence_val = count / signal_buffer.buffer.maxlen if signal_buffer.buffer.maxlen > 0 else 0
     local_history = [] 
     
     # ------------------------------------------------------------------------
@@ -104,13 +102,19 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
             # 3. BUFFER
             confirmed_signal = signal_buffer.update(current_signal)
 
-            # 4. TRANSLATION & OUTPUT
+            # --- NOVO: CÁLCULO DE CONFIANÇA ---
+            # Verificamos quantas vezes o sinal atual aparece no buffer
+            count = list(signal_buffer.buffer).count(current_signal)
+            confidence_val = count / signal_buffer.buffer.maxlen if signal_buffer.buffer.maxlen > 0 else 0
+            # ------------------------------------------------
+
+            # 5. TRANSLATION & OUTPUT
             translated_text = translator.translate(confirmed_signal)
             
             if confirmed_signal:
                 local_history.append(confirmed_signal)
 
-            # 5. CONVERSÃO E SINCRONIZAÇÃO
+            # 6. CONVERSÃO E SINCRONIZAÇÃO
             frame_bytes = cv2_to_flet_image(annotated_frame) 
 
             ui_callback(
