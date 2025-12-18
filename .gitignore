@@ -157,3 +157,4 @@ cython_debug/
 bin/*
 lib/*
 share/*
+resources/resources/appimagetool
