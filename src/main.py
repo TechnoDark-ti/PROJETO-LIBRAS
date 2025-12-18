@@ -25,6 +25,8 @@ from core.utils import cv2_to_flet_image
 # Importação da GUI
 from ui.app import MainApp, start_app # Launcher da UI
 
+# 1. VARIÁVEL GLOBAL (Acessível por todos)
+current_landmarks_global = []
 
 # ------------------------------------------------------------------------
 # 1. FUNÇÃO DE PROCESSAMENTO PESADO (Executada em um thread separado)
@@ -35,6 +37,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     Loop principal que executa o pipeline de visão computacional.
     Roda em um thread separado para não bloquear a UI.
     """
+    global current_landmarks_global # <--- ESSENCIAL para poder escrever na global
     local_history = [] 
     
     # ------------------------------------------------------------------------
@@ -97,7 +100,10 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
             # 2. CLASSIFICATION (Obter landmarks e classificar)
             if hands:
                 landmarks = hand_tracker.extract_landmarks(hands[0])
+                current_landmarks_global = landmarks # <--- Atualiza a global aqui
                 current_signal = signal_classifier.classify(landmarks)
+            else:
+                current_landmarks_global = [] # Limpa se não houver mão
             
             # 3. BUFFER
             confirmed_signal = signal_buffer.update(current_signal)
@@ -143,32 +149,30 @@ def reset_buffer_handler(e, signal_buffer_instance):
 
 def main(page: ft.Page):
     print("Flet UI Iniciada.")
-    
-    # 1. Inicialização dos módulos do core (continuam aqui!)
+
+    # 1. Inicializa Módulos do Core
     camera = Camera()
     hand_tracker = HandTracker()
     signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
     signal_buffer = SignalBuffer(size=config.BUFFER_SIZE, min_confidence=config.MIN_CONFIDENCE)
     translator = Translator() 
     
-    # 2. Inicializa a UI (Cria a instância da MainApp)
+    # 2. Inicializa a UI
     app = MainApp(page)
-    
-    # 3. Define a função de callback que o thread vai usar para se comunicar
-    ui_callback_func = app.update_ui_with_data
 
-    def start_handler(e):
-        # [FUTURO]: Lógica para parar/iniciar o thread de processamento
-        print("[AÇÃO] Botão INICIAR/PAUSAR clicado.")
+    # 3. Define Handlers conectando Core e UI
+    start_handler = lambda e: print("Ação: Play/Pause")
+    reset_handler = lambda e: reset_buffer_handler(e, signal_buffer)
+    record_handler = lambda e: record_sample_handler(e, app) # Passa o app para pegar o texto
+
+    app.set_handlers(start_handler, reset_handler, record_handler)
     
-    reset_handler_with_args = lambda e: reset_buffer_handler(e, signal_buffer)
-    app.set_handlers(start_handler, reset_handler_with_args) # NOVO MÉTODO CHAMADO
-    
-    # 4. Inicia o thread de processamento (passando os módulos e a função de callback)
+    # 4. Inicia Thread de Processamento
+    ui_callback_func = app.update_ui_with_data
     processing_thread = threading.Thread(
         target=processing_loop,
         args=(camera, hand_tracker, signal_classifier, signal_buffer, translator, ui_callback_func),
-        daemon=True # Garante que o thread morra se o app principal fechar
+        daemon=True
     )
     processing_thread.start()
 
