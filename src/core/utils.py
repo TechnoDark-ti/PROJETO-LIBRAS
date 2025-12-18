@@ -2,6 +2,8 @@ import cv2
 import io
 import numpy as np
 import base64
+import os
+import csv
 
 from PIL import Image
 
@@ -33,3 +35,14 @@ def cv2_to_flet_image(frame: np.ndarray) -> str:
     
     # 6. Decodifica para string e retorna.
     return base64_bytes.decode('utf-8')
+
+def save_landmarks_to_csv(landmarks, label):
+    folder = "data/raw_samples"
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    
+    file_path = os.path.join(folder, f"{label}.csv")
+
+    with open(file_path, model='a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(landmarks)
