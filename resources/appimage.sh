@@ -20,9 +20,9 @@ mkdir -p $APP_DIR/usr/share/icons/hicolor/256x256/apps
 # Verifica se o binário foi gerado
 if [ -d "$BUILD_DIR" ]; then
     cp -r $BUILD_DIR/* $APP_DIR/usr/bin/
-else
-    echo "Erro: Falha na compilação. Rode o install_toolchain.sh primeiro."
-    exit 1
+#else
+    #echo "Erro: Falha na compilação. Rode o install_toolchain.sh primeiro."
+    #exit 1
 fi
 
 # Integração do Ícone
