@@ -7,11 +7,8 @@ import glob
 
 from torch.utils.data import Dataset, DataLoader
 
-
-
 # Definição da Rede Neural (MLP)
 #Deve ser idêntica à Classe que está no signal_classifier.py
-
 
 class LibrasNet(nn.Module):
     def __init__(self, input_size, num_classes):
@@ -77,8 +74,6 @@ class LibrasDataset(Dataset):
 
     def ___getitem__(self, idx):
         return torch.tensor(self.samples[idx]), torch.tensor(self.labels[idx])
-    
-
 
 def train_model():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
