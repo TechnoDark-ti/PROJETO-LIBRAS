@@ -1,7 +1,8 @@
 import cv2
-from cvzone.HandTrackingModule import HandDetector
 import torch
 import time
+
+from cvzone.HandTrackingModule import HandDetector
 
 def testar_camera():
     print("\n[TESTE] Inciando teste da camera...")
