@@ -45,7 +45,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
     # MODO REAL
     try:
         camera.start()
-        print("Câmera iniciada com sucesso.")
+        print("[AVISO] Câmera iniciada com sucesso.")
         
         while True:
             frame = camera.read()
@@ -105,7 +105,7 @@ def record_sample_handler(e, app_instance):
     
     if current_landmarks_global:
         save_landmark_sample(current_landmarks_global, label)
-        print(f"✅ Amostra salva para: {label}")
+        print(f"[SUCESSO] Amostra salva para: {label}")
         
         # Feedback Visual na UI
         app_instance.record_button.text = "SALVO!"
@@ -116,14 +116,14 @@ def record_sample_handler(e, app_instance):
         app_instance.record_button.bgcolor = ft.Colors.ORANGE_600
         app_instance.page.update()
     else:
-        print("❌ Nenhuma mão detetada!")
+        print("[AVISO] Nenhuma mão detetada!")
 
 # ------------------------------------------------------------------------
 # MAIN
 # ------------------------------------------------------------------------
 
 def main(page: ft.Page):
-    print("Flet UI Iniciada.")
+    print("[AVISO] Flet UI Iniciada.")
 
     # 1. Inicializa Core
     camera = Camera()
