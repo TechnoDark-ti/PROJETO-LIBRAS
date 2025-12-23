@@ -25,27 +25,34 @@ from core.utils import cv2_to_flet_image, save_landmarks_to_csv
 # Importação da GUI
 from ui.app import MainApp, start_app # Launcher da UI
 
-# 1. VARIÁVEL GLOBAL (Acessível por todos: Thread e Botão)
+# Importação do módulo de Treino
+from train_model import run_training_pipeline
+
+# 1. VARIÁVEL GLOBAL (Acessível por todos)
 current_landmarks_global = []
+# Global para acessar o classificador e recarregá-lo
+global_signal_classifier = None 
 
 # ------------------------------------------------------------------------
 # PROCESSAMENTO (Thread)
 # ------------------------------------------------------------------------
 
 def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, translator, ui_callback):
-    global current_landmarks_global # Avisa que vai escrever na variável lá de cima
+    global current_landmarks_global 
     local_history = [] 
     
-    # ... (código do modo simulado mantido igual) ...
+    # Atualiza a referência global para podermos recarregar o modelo depois
+    global global_signal_classifier
+    global_signal_classifier = signal_classifier
+
     if not config.USE_CAMERA:
         print("Thread de Processamento: Modo Simulado Ativado")
-        # (Lógica simulada simplificada para brevidade, manter a tua se usares)
         return 
 
     # MODO REAL
     try:
         camera.start()
-        print("[AVISO] Câmera iniciada com sucesso.")
+        print("Câmera iniciada com sucesso.")
         
         while True:
             frame = camera.read()
@@ -56,7 +63,6 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
             
             if hands:
                 landmarks = hand_tracker.extract_landmarks(hands[0])
-                # ATUALIZA A GLOBAL AQUI
                 current_landmarks_global = landmarks 
                 current_signal = signal_classifier.classify(landmarks)
             else:
@@ -64,7 +70,6 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
             
             confirmed_signal = signal_buffer.update(current_signal)
 
-            # Cálculo de Confiança
             count = list(signal_buffer.buffer).count(current_signal)
             confidence_val = count / signal_buffer.buffer.maxlen if signal_buffer.buffer.maxlen > 0 else 0
 
@@ -90,7 +95,7 @@ def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, tran
         print("Thread encerrada.")
 
 # ------------------------------------------------------------------------
-# HANDLERS (Ações dos Botões)
+# HANDLERS
 # ------------------------------------------------------------------------
 
 def reset_buffer_handler(e, signal_buffer_instance):
@@ -98,52 +103,83 @@ def reset_buffer_handler(e, signal_buffer_instance):
     print("[AÇÃO] Buffer resetado.")
 
 def record_sample_handler(e, app_instance):
-    # Lê a variável global que a thread está atualizando
     global current_landmarks_global 
+    global global_signal_classifier
     
     label = app_instance.label_input.value
     
     if current_landmarks_global:
+        # 1. Salva a amostra
         save_landmarks_to_csv(current_landmarks_global, label)
-        print(f"[SUCESSO] Amostra salva para: {label}")
+        print(f"✅ Amostra salva para: {label}")
         
-        # Feedback Visual na UI
-        app_instance.record_button.text = "SALVO!"
-        app_instance.record_button.bgcolor = ft.Colors.GREEN
+        # Feedback visual rápido
+        app_instance.record_button.text = "SALVANDO..."
+        app_instance.record_button.bgcolor = ft.Colors.BLUE
         app_instance.page.update()
-        time.sleep(0.2)
+        
+        # 2. Dispara o Treino Automático (Pode demorar uns segundos)
+        # Idealmente faríamos isso em outra thread para não congelar a UI, 
+        # mas como são poucos dados, será rápido.
+        app_instance.record_button.text = "TREINANDO..."
+        app_instance.record_button.bgcolor = ft.Colors.PURPLE
+        app_instance.page.update()
+        
+        success, message = run_training_pipeline()
+        
+        if success:
+            print(f"✅ {message}")
+            # 3. Recarrega o modelo no classificador em tempo real!
+            if global_signal_classifier:
+                global_signal_classifier._load_model()
+                print("🔄 Modelo recarregado na memória!")
+
+            app_instance.record_button.text = "APRENDIDO!"
+            app_instance.record_button.bgcolor = ft.Colors.GREEN
+            
+            # Mostra snackbar (aviso) na tela
+            app_instance.page.snack_bar = ft.SnackBar(ft.Text(f"Novo sinal '{label}' aprendido com sucesso!"), bgcolor=ft.Colors.GREEN)
+            app_instance.page.snack_bar.open = True
+            
+        else:
+            print(f"❌ Erro no treino: {message}")
+            app_instance.record_button.text = "ERRO TREINO"
+            app_instance.record_button.bgcolor = ft.Colors.RED
+
+        app_instance.page.update()
+        time.sleep(1.0)
+        
+        # Restaura botão
         app_instance.record_button.text = "GRAVAR"
         app_instance.record_button.bgcolor = ft.Colors.ORANGE_600
         app_instance.page.update()
     else:
-        print("[AVISO] Nenhuma mão detetada!")
+        print("❌ Nenhuma mão detetada!")
+        app_instance.page.snack_bar = ft.SnackBar(ft.Text("Nenhuma mão detectada!"), bgcolor=ft.Colors.RED)
+        app_instance.page.snack_bar.open = True
+        app_instance.page.update()
 
 # ------------------------------------------------------------------------
 # MAIN
 # ------------------------------------------------------------------------
 
 def main(page: ft.Page):
-    print("[AVISO] Flet UI Iniciada.")
+    print("Flet UI Iniciada.")
 
-    # 1. Inicializa Core
     camera = Camera()
     hand_tracker = HandTracker()
-    signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
+    signal_classifier = SignalClassifier(model_path="src/models/libras_model.pt") 
     signal_buffer = SignalBuffer(size=config.BUFFER_SIZE, min_confidence=config.MIN_CONFIDENCE)
     translator = Translator() 
     
-    # 2. Inicializa UI
     app = MainApp(page)
 
-    # 3. Define Handlers
-    # Usamos lambdas para passar os argumentos extras (app, signal_buffer)
     start_h = lambda e: print("[AÇÃO] Play/Pause (Futuro)")
     reset_h = lambda e: reset_buffer_handler(e, signal_buffer)
     record_h = lambda e: record_sample_handler(e, app) 
 
     app.set_handlers(start_h, reset_h, record_h)
     
-    # 4. Inicia Thread
     ui_callback_func = app.update_ui_with_data
     processing_thread = threading.Thread(
         target=processing_loop,
