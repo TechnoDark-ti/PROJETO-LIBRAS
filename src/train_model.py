@@ -4,19 +4,18 @@ import pandas as pd
 import numpy as np
 import os
 import glob
-import torch.optim as optim # Faltava importar o optim explicitamente
+import torch.optim as optim
 
 from torch.utils.data import Dataset, DataLoader
 
-# Definição da Rede Neural (MLP)
-# Deve ser idêntica à Classe que está no signal_classifier.py
+# 1. Definição da Rede Neural (MLP)
 class LibrasNet(nn.Module):
     def __init__(self, input_size, num_classes):
-        super(LibrasNet, self).__init__() # Boa prática adicionar o super().__init__()
+        super(LibrasNet, self).__init__()
         self.layers = nn.Sequential(
             nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.Dropout(0.2), # CORREÇÃO: 0.2 (float) e não 0, 2
+            nn.Dropout(0.2), 
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, num_classes)
@@ -24,26 +23,22 @@ class LibrasNet(nn.Module):
     
     def forward(self, x):
         return self.layers(x)
-    
 
+# 2. Dataset Customizado
 class LibrasDataset(Dataset):
     def __init__(self, data_folder):
         self.samples = []
         self.labels = []
 
-        # CORREÇÃO: os.path.join em vez de os.path(...)
+        # CORREÇÃO: os.path.join
         csv_files = glob.glob(os.path.join(data_folder, "*.csv"))
 
         if not csv_files:
-            # Imprime o caminho absoluto para ajudar no debug
             print(f"Procurando em: {os.path.abspath(data_folder)}")
             raise FileNotFoundError(f"Nenhum arquivo CSV encontrado em {data_folder}. Grave as amostras primeiro!")
         
-        # Cria as classes baseado nos nomes dos arquivos (ex: "A.csv" -> A)
         self.classes = [os.path.basename(f).replace('.csv', '') for f in csv_files]
         self.classes.sort()
-        
-        # CORREÇÃO: cls_nome estava diferente de cls_name
         self.class_to_idx = {cls_name: i for i, cls_name in enumerate(self.classes)}
 
         print(f"Classes encontradas: {self.classes}")
@@ -53,49 +48,81 @@ class LibrasDataset(Dataset):
             target = self.class_to_idx[cls_name]
 
             try:
-                df = pd.read_csv(file_path, header=None)
+                # NOVA ABORDAGEM: Ler tudo como string (dtype=str) para evitar erros de conversão iniciais
+                df = pd.read_csv(file_path, header=None, dtype=str)
             except pd.errors.EmptyDataError:
                 print(f"Aviso: Arquivo vazio ignorado: {file_path}")
                 continue
             
             for _, row in df.iterrows():
-                landmarks = row.values.astype(np.float32)
-                
-                # Garante que temos 42 pontos (21 x 2)
-                if len(landmarks) != 42:
-                    continue
+                try:
+                    # --- LIMPEZA FORÇA BRUTA ---
+                    # 1. Joga tudo numa string só, ignorando colunas vazias
+                    full_row_str = ','.join(row.dropna().astype(str).values)
+                    
+                    # 2. Remove caracteres indesejados (colchetes, aspas, quebras de linha)
+                    clean_str = full_row_str.replace('[', '').replace(']', '').replace("'", "").replace('"', '').replace('\n', '')
+                    
+                    # 3. Divide por vírgula (ou espaço, se falhar)
+                    if ',' in clean_str:
+                        parts = clean_str.split(',')
+                    else:
+                        parts = clean_str.split()
+                    
+                    # 4. Tenta converter cada pedaço para float
+                    landmarks = []
+                    for p in parts:
+                        try:
+                            # float() ignora espaços em branco automaticamente
+                            landmarks.append(float(p))
+                        except ValueError:
+                            continue # Pula coisas que não são números
 
-                # Normalização (Relativa ao Pulso)
-                base_x, base_y = landmarks[0], landmarks[1]
-                for i in range(0, len(landmarks), 2):
-                    landmarks[i] -= base_x
-                    landmarks[i+1] -= base_y
-                
-                self.samples.append(landmarks)
-                self.labels.append(target)
+                    landmarks = np.array(landmarks, dtype=np.float32)
+
+                    # Filtro de tamanho: Se veio com Z (63 pontos), converte para 42 (X,Y)
+                    if len(landmarks) == 63: 
+                         reshaped = landmarks.reshape(21, 3)
+                         landmarks = reshaped[:, :2].flatten() # Fica com (21x2) = 42
+
+                    # Se não tiver exatamente 42 números, essa linha é lixo
+                    if len(landmarks) != 42:
+                        continue
+
+                    # Normalização (Invariante à Posição)
+                    base_x, base_y = landmarks[0], landmarks[1]
+                    for i in range(0, len(landmarks), 2):
+                        landmarks[i] -= base_x
+                        landmarks[i+1] -= base_y
+                    
+                    self.samples.append(landmarks)
+                    self.labels.append(target)
+                    
+                except Exception as e:
+                    # print(f"Erro ao processar linha: {e}")
+                    continue
 
     def __len__(self):
         return len(self.samples)
 
-    # CORREÇÃO: __getitem__ (2 underlines) em vez de ___getitem__
     def __getitem__(self, idx):
         return torch.tensor(self.samples[idx]), torch.tensor(self.labels[idx])
 
+# 3. Função Principal de Treino
 def train_model():
-    # Ajuste de caminho para funcionar rodando da raiz ou de src/
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Caminhos robustos
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) 
     DATA_DIR = os.path.join(BASE_DIR, "data", "raw_samples")
-
-    # Verifica se existe no caminho relativo direto
+    
     if not os.path.exists(DATA_DIR):
         DATA_DIR = "data/raw_samples"
-    
+
     MODEL_DIR = "src/models"
 
     print(f"Procurando dados em: {os.path.abspath(DATA_DIR)}")
 
     if not os.path.exists(DATA_DIR):
-        print(f"Erro Crítico: Pasta de Dados não encontrada")
+        print(f"Erro Crítico: Pasta de Dados não encontrada em {DATA_DIR}")
         return
     
     try:
@@ -105,24 +132,22 @@ def train_model():
         return
     
     if len(dataset) == 0:
-        print("Erro: Nenhum dado válido encontrado nos CSVs")
+        print("Erro: Nenhum dado válido encontrado nos CSVs (após limpeza).")
         return
     
-    # CORREÇÃO: shuffle=True em vez de shurffle=True
     loader = DataLoader(dataset, batch_size=16, shuffle=True)
 
-    # Configuração do Modelo
     model = LibrasNet(input_size=42, num_classes=len(dataset.classes))
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    print("--- Iniciando o Treinamento ---")
+    print(f"--- Iniciando Treinamento com {len(dataset)} amostras ---")
     model.train()
 
-    # Loop de Épocas
     EPOCHS = 100
     for epoch in range(EPOCHS):
         total_loss = 0
+        batches = 0
         for inputs, targets in loader:
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -130,11 +155,11 @@ def train_model():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+            batches += 1
 
-        if (epoch + 1) % 10 == 0:
-            print(f"Época: {epoch+1}/{EPOCHS} - Perda (Loss): {total_loss/len(loader):.4f}")
+        if batches > 0 and (epoch + 1) % 10 == 0:
+            print(f"Época: {epoch+1}/{EPOCHS} - Perda: {total_loss/batches:.4f}")
     
-    # Salva o modelo completo (pesos + nome das classes)
     if not os.path.exists(MODEL_DIR):
         os.makedirs(MODEL_DIR)
     
@@ -146,10 +171,8 @@ def train_model():
         'input_size': 42
     }
 
-    # CORREÇÃO: Salvar no caminho (save_path), não salvar os dados dentro dos dados
     torch.save(save_data, save_path)
     print(f"SUCESSO! Modelo Treinado e salvo em: {save_path}")
-
 
 if __name__ == "__main__":
     train_model()
