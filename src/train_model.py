@@ -1,127 +1,147 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 import os
 import glob
 
-# ------------------------------------------------------------------------
-# 1. DEFINIÇÃO DA ARQUITETURA DA REDE NEURAL
-# ------------------------------------------------------------------------
+from torch.utils.data import Dataset, DataLoader
 
-class LibrasClassifier(nn.Module):
+# Definição da Rede Neural (MLP)
+#Deve ser idêntica à Classe que está no signal_classifier.py
+
+class LibrasNet(nn.Module):
     def __init__(self, input_size, num_classes):
-        super(LibrasClassifier, self). __init__()
-        # Camadas densas (MLP)
-        self.network = nn.Sequential(
-            nn.Linear(input_size, 128),
+        self.layers = nn.Sequential(
+            nn.Linear(input_size,128),
             nn.ReLU(),
-            nn.Dropout(0.2), # Evita overfitting
+            nn.Dropout(0, 2),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, num_classes)
         )
+
     
     def forward(self, x):
-        return self.network(x)
-
-# ------------------------------------------------------------------------
-# 2. DATASET CUSTOMIZADO PARA LIBRAS
-# ------------------------------------------------------------------------
+        return self.layers(x)
+    
 
 class LibrasDataset(Dataset):
-    def __init__(self, csv_folder):
-        self.data = []
+    def __init__(self, data_folder):
+        self.samples = []
         self.labels = []
-        
-        # Busca todos os CSVs na pasta
-        csv_files = glob.glob(os.path.join(csv_folder, "*.csv"))
-        
-        # Mapeia nomes de arquivos para números (ex: A.csv -> 0, B.csv -> 1)
-        self.class_map = {os.path.basename(f).replace('.csv', ''): i for i, f in enumerate(csv_files)}
-        self.reverse_map = {i: name for name, i in self.class_map.items()}
-        
-        print(f"Classes encontradas: {self.class_map}")
 
-        for file in csv_files:
-            label_name = os.path.basename(file).replace('.csv', '')
-            label_idx = self.class_map[label_name]
+        csv_files = glob.glob(os.path(data_folder, "*.csv"))
+
+        if not csv_files:
+            raise FileNotFoundError(f"Nenhum arquivo CSV encontrado em {data_folder}. Grave as amostras primeiro!")
+        
+
+        #Cria as clases baseado nos nomes dos arquivos (ex: "A,csv" -> A)
+        self.classes = [os.path.basename(f).replace('.csv', '') for f in csv_files]
+        self.classes.sort()
+        self.class_to_idx = {cls_name: i for i, cls_nome in enumerate(self.classes)}
+
+        print(f"Classes encontradas: {self.classes}")
+
+        for file_path in csv_files:
+            cls_name = os.path.basename(file_path).replace('.csv', '')
+            target = self.class_to_idx[cls_name]
+
+            try:
+                df  = pd.read_csv(file_path, header=None)
+            except pd.errors.EmptyDataError:
+                print(f"Aviso: Arquivo vazio ignorado: {file_path}")
+                continue
             
-            # Carrega os landmarks do CSV
-            df = pd.read_csv(file, header=None)
             for _, row in df.iterrows():
                 landmarks = row.values.astype(np.float32)
                 
-                # --- PRÉ-PROCESSAMENTO: NORMALIZAÇÃO ---
-                # Subtraímos o primeiro ponto (pulso) de todos os outros 
-                # para tornar o sinal invariante à posição na tela.
+                if len(landmarks) != 42:
+                    continue
+
+
                 base_x, base_y = landmarks[0], landmarks[1]
                 for i in range(0, len(landmarks), 2):
                     landmarks[i] -= base_x
                     landmarks[i+1] -= base_y
                 
-                self.data.append(landmarks)
-                self.labels.append(label_idx)
+                self.samples.append(landmarks)
+                self.labels.append(target)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.samples)
 
-    def __getitem__(self, idx):
-        return torch.tensor(self.data[idx]), torch.tensor(self.labels[idx])
+    def ___getitem__(self, idx):
+        return torch.tensor(self.samples[idx]), torch.tensor(self.labels[idx])
 
-# ------------------------------------------------------------------------
-# 3. LOOP DE TREINAMENTO
-# ------------------------------------------------------------------------
+def train_model():
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DATA_DIR = os.path.join(BASE_DIR, "..", "data", "raw_samples")
 
-def train():
-    # Configurações
-    DATA_PATH = "data/raw_samples"
-    MODEL_SAVE_PATH = "src/models/libras_model.pt"
-    EPOCHS = 100
-    BATCH_SIZE = 16
-    LEARNING_RATE = 0.001
+    if not os.path.exists(DATA_DIR):
+        DATA_DIR = "data/raw_samples"
+    
+    MODEL_DR = "src/models"
 
-    if not os.path.exists(DATA_PATH):
-        print(f"Erro: Pasta {DATA_PATH} não encontrada. Capture dados primeiro!")
+    print(f"Procurando dados em: {os.path.abspath(DATA_DIR)}")
+
+    if not os.path.exists(DATA_DIR):
+        print(f"Erro Crítico: Pasta de Dados não encontradas")
         return
+    
 
-    # Prepara dados
-    dataset = LibrasDataset(DATA_PATH)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    try:
+        dataset = LibrasDataset(DATA_DIR)
+    except FileNotFoundError as e:
+        print(e)
+        return
     
-    num_classes = len(dataset.class_map)
-    model = LibrasClassifier(input_size=42, num_classes=num_classes)
+    if len(dataset) == 0:
+        print("Erro: Nenhum dado válido encontrado nos CSVs")
+        return
     
+    loader = DataLoader(dataset, batch_size=16, shurffle=True)
+
+    # Configuração do Modelo
+    model = LibrasNet(input_size=42, num_classes=len(dataset.classes))
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    print(f"Iniciando treinamento com {len(dataset)} amostras...")
-
+    print("--- iniciando o Treinamento ---")
     model.train()
+
+    # Loop de Épocas
+    EPOCHS = 100
     for epoch in range(EPOCHS):
         total_loss = 0
-        for inputs, targets in dataloader:
+        for inputs, targets in loader:
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        
-        if (epoch + 1) % 10 == 0:
-            print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {total_loss/len(dataloader):.4f}")
 
-    # Salva o modelo e o mapeamento de classes
-    os.makedirs(os.path.dirname(MODEL_SAVE_PATH), exist_ok=True)
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'class_map': dataset.class_map,
-        'reverse_map': dataset.reverse_map
-    }, MODEL_SAVE_PATH)
+
+        if (epoch + 1) % 10 == 0:
+            print(f"Época: {epoch+1}/{EPOCHS} - Perda (Loss): {total_loss/len(loader):.4f}")
     
-    print(f"✅ Treinamento concluído! Modelo salvo em: {MODEL_SAVE_PATH}")
+    #salva o modelo completo (pesos + nome das classes)
+    if not os.path.exists(MODEL_DR):
+        os.makedirs(MODEL_DR)
+    
+    save_path = os.path.join(MODEL_DR, "libras_model.pt")
+
+    save_data = {
+        'model_state': model.state_dict(),
+        'classes': dataset.classes,
+        'input_size': 42
+    }
+
+    torch.save(save_data, save_data)
+    print(f"SUCESSO! Modelo Treinado e salve em: {save_path}")
+
 
 if __name__ == "__main__":
-    train()
+    train_model()
