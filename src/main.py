@@ -20,7 +20,7 @@ from core.hand_tracker import HandTracker
 from core.signal_classifier import SignalClassifier
 from core.signal_buffer import SignalBuffer
 from core.translator import Translator
-from core.utils import cv2_to_flet_image
+from core.utils import cv2_to_flet_image, save_landmarks_to_csv
 
 # Importação da GUI
 from ui.app import MainApp, start_app # Launcher da UI
@@ -104,7 +104,7 @@ def record_sample_handler(e, app_instance):
     label = app_instance.label_input.value
     
     if current_landmarks_global:
-        save_landmark_sample(current_landmarks_global, label)
+        save_landmarks_to_csv(current_landmarks_global, label)
         print(f"[SUCESSO] Amostra salva para: {label}")
         
         # Feedback Visual na UI
