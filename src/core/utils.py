@@ -43,6 +43,6 @@ def save_landmarks_to_csv(landmarks, label):
     
     file_path = os.path.join(folder, f"{label}.csv")
 
-    with open(file_path, model='a', newline='') as f:
+    with open(file_path, mode='a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(landmarks)
