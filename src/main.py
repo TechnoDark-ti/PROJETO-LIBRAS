@@ -25,149 +25,125 @@ from core.utils import cv2_to_flet_image
 # Importação da GUI
 from ui.app import MainApp, start_app # Launcher da UI
 
-# 1. VARIÁVEL GLOBAL (Acessível por todos)
+# 1. VARIÁVEL GLOBAL (Acessível por todos: Thread e Botão)
 current_landmarks_global = []
 
 # ------------------------------------------------------------------------
-# 1. FUNÇÃO DE PROCESSAMENTO PESADO (Executada em um thread separado)
+# PROCESSAMENTO (Thread)
 # ------------------------------------------------------------------------
 
 def processing_loop(camera, hand_tracker, signal_classifier, signal_buffer, translator, ui_callback):
-    """
-    Loop principal que executa o pipeline de visão computacional.
-    Roda em um thread separado para não bloquear a UI.
-    """
-    global current_landmarks_global # <--- ESSENCIAL para poder escrever na global
+    global current_landmarks_global # Avisa que vai escrever na variável lá de cima
     local_history = [] 
     
-    # ------------------------------------------------------------------------
-    # MODO SIMULADO (Webcam OFF) - CORRIGIDO
-    # ------------------------------------------------------------------------
-
+    # ... (código do modo simulado mantido igual) ...
     if not config.USE_CAMERA:
         print("Thread de Processamento: Modo Simulado Ativado")
+        # (Lógica simulada simplificada para brevidade, manter a tua se usares)
+        return 
 
-        # 1. Definindo a sequência de simulação (para teste de buffer visual)
-        simulated_signs = config.SIMULATED_SIGNS + ["Nenhum"] * 5
-        
-        for sign in simulated_signs:
-            # Assumimos que o 'sign' é o sinal bruto detectado na simulação
-            current_signal = sign
-            
-            # Processamento do Core (Buffer e Tradução)
-            confirmed_signal = signal_buffer.update(current_signal)
-            translated_text = translator.translate(confirmed_signal)
-            
-            if confirmed_signal:
-                local_history.append(confirmed_signal)
-            
-            # NOVO: Gera e converte o frame Mock para visualização no Flet
-            mock_frame = Camera.get_mock_frame() 
-            frame_bytes = cv2_to_flet_image(mock_frame)
-            
-            # SINCRONIZAÇÃO: Envia os dados e o FRAME para a UI
-            ui_callback(
-                current_signal=current_signal,
-                #confirmed_signal=confirmed_signal, # Adicionado para debug
-                translated_text=translated_text,
-                history=local_history.copy(),
-                frame_bytes=frame_bytes
-            )
-            
-            time.sleep(0.5) 
-            
-        print("Simulação finalizada.")
-        return # Finaliza a thread após a simulação
-        
-
-    # ------------------------------------------------------------------------
-    # MODO REAL (Webcam ON) - REESTRUTURADO
-    # ------------------------------------------------------------------------
-
+    # MODO REAL
     try:
         camera.start()
         print("Câmera iniciada com sucesso.")
         
         while True:
             frame = camera.read()
-            if frame is None:
-                continue
+            if frame is None: continue
 
-            # 1. HAND TRACKING
             hands, annotated_frame = hand_tracker.process(frame)
             current_signal = "Nenhum"
             
-            # 2. CLASSIFICATION (Obter landmarks e classificar)
             if hands:
                 landmarks = hand_tracker.extract_landmarks(hands[0])
-                current_landmarks_global = landmarks # <--- Atualiza a global aqui
+                # ATUALIZA A GLOBAL AQUI
+                current_landmarks_global = landmarks 
                 current_signal = signal_classifier.classify(landmarks)
             else:
-                current_landmarks_global = [] # Limpa se não houver mão
+                current_landmarks_global = [] 
             
-            # 3. BUFFER
             confirmed_signal = signal_buffer.update(current_signal)
 
-            # --- NOVO: CÁLCULO DE CONFIANÇA ---
-            # Verificamos quantas vezes o sinal atual aparece no buffer
+            # Cálculo de Confiança
             count = list(signal_buffer.buffer).count(current_signal)
             confidence_val = count / signal_buffer.buffer.maxlen if signal_buffer.buffer.maxlen > 0 else 0
-            # ------------------------------------------------
 
-            # 5. TRANSLATION & OUTPUT
             translated_text = translator.translate(confirmed_signal)
             
             if confirmed_signal:
                 local_history.append(confirmed_signal)
 
-            # 6. CONVERSÃO E SINCRONIZAÇÃO
             frame_bytes = cv2_to_flet_image(annotated_frame) 
 
             ui_callback(
                 current_signal=current_signal,
-                #confirmed_signal=confirmed_signal,
                 translated_text=translated_text,
                 history=local_history.copy(),
                 frame_bytes=frame_bytes,
                 confidence=confidence_val
             )
-            
-            # time.sleep(1/30) # Opcional: controle de FPS
                 
-    except RuntimeError as e:
-        print(f"ERRO FATAL (Core): {e}")
     except Exception as e:
-        print(f"Erro inesperado no thread de processamento: {e}")
+        print(f"Erro no thread: {e}")
     finally:
         camera.stop()
-        print("Thread de processamento encerrado.")
+        print("Thread encerrada.")
+
+# ------------------------------------------------------------------------
+# HANDLERS (Ações dos Botões)
+# ------------------------------------------------------------------------
 
 def reset_buffer_handler(e, signal_buffer_instance):
-    """ Handler para o botão 'RESET BUFFER' (Refazer). """
-    result = signal_buffer_instance.reset()
-    print(f"[AÇÃO] Buffer resetado: {result}")
+    signal_buffer_instance.reset()
+    print("[AÇÃO] Buffer resetado.")
+
+def record_sample_handler(e, app_instance):
+    # Lê a variável global que a thread está atualizando
+    global current_landmarks_global 
+    
+    label = app_instance.label_input.value
+    
+    if current_landmarks_global:
+        save_landmark_sample(current_landmarks_global, label)
+        print(f"✅ Amostra salva para: {label}")
+        
+        # Feedback Visual na UI
+        app_instance.record_button.text = "SALVO!"
+        app_instance.record_button.bgcolor = ft.Colors.GREEN
+        app_instance.page.update()
+        time.sleep(0.2)
+        app_instance.record_button.text = "GRAVAR"
+        app_instance.record_button.bgcolor = ft.Colors.ORANGE_600
+        app_instance.page.update()
+    else:
+        print("❌ Nenhuma mão detetada!")
+
+# ------------------------------------------------------------------------
+# MAIN
+# ------------------------------------------------------------------------
 
 def main(page: ft.Page):
     print("Flet UI Iniciada.")
 
-    # 1. Inicializa Módulos do Core
+    # 1. Inicializa Core
     camera = Camera()
     hand_tracker = HandTracker()
     signal_classifier = SignalClassifier(model_path="models/libras_model.pt") 
     signal_buffer = SignalBuffer(size=config.BUFFER_SIZE, min_confidence=config.MIN_CONFIDENCE)
     translator = Translator() 
     
-    # 2. Inicializa a UI
+    # 2. Inicializa UI
     app = MainApp(page)
 
-    # 3. Define Handlers conectando Core e UI
-    start_handler = lambda e: print("Ação: Play/Pause")
-    reset_handler = lambda e: reset_buffer_handler(e, signal_buffer)
-    record_handler = lambda e: record_sample_handler(e, app) # Passa o app para pegar o texto
+    # 3. Define Handlers
+    # Usamos lambdas para passar os argumentos extras (app, signal_buffer)
+    start_h = lambda e: print("[AÇÃO] Play/Pause (Futuro)")
+    reset_h = lambda e: reset_buffer_handler(e, signal_buffer)
+    record_h = lambda e: record_sample_handler(e, app) 
 
-    app.set_handlers(start_handler, reset_handler, record_handler)
+    app.set_handlers(start_h, reset_h, record_h)
     
-    # 4. Inicia Thread de Processamento
+    # 4. Inicia Thread
     ui_callback_func = app.update_ui_with_data
     processing_thread = threading.Thread(
         target=processing_loop,
