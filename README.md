@@ -30,7 +30,7 @@ Bem-vindo ao repositório do Sistema de Visao Computacional para Alfabetização
 
 Clone o repositório:
 ~~~bash
-git clone [https://github.com/seu-usuario/projeto-libras.git](https://github.com/seu-usuario/projeto-libras.git)
+git clone [https://github.com/TechnoDark-ti/PROJETO-LIBRAS.git](https://github.com/TechnoDark-ti/PROJETO-LIBRAS.git)
 ~~~
 ~~~bash
 cd projeto-libras
