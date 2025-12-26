@@ -2,7 +2,7 @@
 
 Sistema de Alfabetização em Libras (TCC)
 
-Bem-vindo ao repositório do Sistema de Visao Computacional para Alfabetização em Libras na Educação Infantil. Este projeto utiliza Visão Computacional (OpenCV/MediaPipe) e Inteligência Artificial (PyTorch) para traduzir sinais da Língua Brasileira de Sinais (Libras) em tempo real, com uma interface gráfica amigável desenvolvida em Flet.
+Bem-vindo ao repositório do Sistema de Visao Computacional para Alfabetização em Libras como ferramenta auxiliadora para docentes. Este projeto utiliza Visão Computacional (OpenCV/MediaPipe) e Inteligência Artificial (PyTorch) para traduzir sinais da Língua Brasileira de Sinais (Libras) em tempo real, com uma interface gráfica amigável desenvolvida em Flet.
 
 ## Funcionalidades
 
