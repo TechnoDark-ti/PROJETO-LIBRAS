@@ -33,14 +33,14 @@ Clone o repositório:
 git clone https://github.com/TechnoDark-ti/PROJETO-LIBRAS.git
 ~~~
 ~~~bash
-cd projeto-libras
+cd PROJETO-LIBRAS
 ~~~
 
 Crie e ative um ambiente virtual (Recomendado):
 
 ### Linux/Mac
 ~~~python
-python3 -m venv venv
+virtualenv -p /usr/bin/python3.11 PROJETO-LIBRAS/
 ~~~
 ~~~bash
 source venv/bin/activate
