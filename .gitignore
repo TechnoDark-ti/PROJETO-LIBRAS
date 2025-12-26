@@ -149,12 +149,27 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-*.bin
-*.pyc
-*.__cache__
-*.cfg
 
+#Arquivos do ambiente virtual
+*.bin
+#Arquivos do ambiente virtual
+*.pyc
+#Arquivos do ambiente virtual
+*.__cache__
+#Configurações do ambiente virtual
+*.cfg
+#Arquivos csv dos sinais
+*.csv
+
+#Arquivos do ambiente virtual
 bin/*
+#Arquivos do ambiente virtual
 lib/*
+#Arquivos do ambiente virtual
 share/*
+#Arquivos do ambiente virtual
 resources/resources/appimagetool
+
+
+#Arquivos de base de dados de aprendizado de máquina
+data/*
