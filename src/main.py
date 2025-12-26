@@ -111,10 +111,10 @@ def record_sample_handler(e, app_instance):
     if current_landmarks_global:
         # 1. Salva a amostra
         save_landmarks_to_csv(current_landmarks_global, label)
-        print(f"✅ Amostra salva para: {label}")
+        print(f"[AVISO] Amostra salva para: {label}")
         
         # Feedback visual rápido
-        app_instance.record_button.text = "SALVANDO..."
+        app_instance.record_button.text = "[AÇÃO] SALVANDO..."
         app_instance.record_button.bgcolor = ft.Colors.BLUE
         app_instance.page.update()
         
@@ -128,11 +128,11 @@ def record_sample_handler(e, app_instance):
         success, message = run_training_pipeline()
         
         if success:
-            print(f"✅ {message}")
+            print(f"[AVISO] {message}")
             # 3. Recarrega o modelo no classificador em tempo real!
             if global_signal_classifier:
                 global_signal_classifier._load_model()
-                print("🔄 Modelo recarregado na memória!")
+                print("[AVISO] Modelo recarregado na memória!")
 
             app_instance.record_button.text = "APRENDIDO!"
             app_instance.record_button.bgcolor = ft.Colors.GREEN
@@ -142,7 +142,7 @@ def record_sample_handler(e, app_instance):
             app_instance.page.snack_bar.open = True
             
         else:
-            print(f"❌ Erro no treino: {message}")
+            print(f"[ERRO] Erro no treino: {message}")
             app_instance.record_button.text = "ERRO TREINO"
             app_instance.record_button.bgcolor = ft.Colors.RED
 
@@ -154,7 +154,7 @@ def record_sample_handler(e, app_instance):
         app_instance.record_button.bgcolor = ft.Colors.ORANGE_600
         app_instance.page.update()
     else:
-        print("❌ Nenhuma mão detetada!")
+        print("[AVISO] Nenhuma mão detetada!")
         app_instance.page.snack_bar = ft.SnackBar(ft.Text("Nenhuma mão detectada!"), bgcolor=ft.Colors.RED)
         app_instance.page.snack_bar.open = True
         app_instance.page.update()

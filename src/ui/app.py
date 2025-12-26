@@ -6,8 +6,11 @@ class MainApp:
         self.page = page
         self.page.title = "Sistema de Alfabetização em Libras"
         self.page.theme_mode = ft.ThemeMode.LIGHT
-        self.page.window_width = 1200
-        self.page.window_height = 900
+        
+        # Removemos dimensões fixas da janela para permitir maximizar livremente
+        # self.page.window_width = 1200 
+        # self.page.window_height = 900
+        
         self.page.padding = 20
         self.page.bgcolor = ft.Colors.GREY_50
         
@@ -40,27 +43,28 @@ class MainApp:
             margin=ft.margin.only(bottom=20)
         )
 
-        # --- 2. ÁREA DE VÍDEO (Esquerda) ---
+        # --- 2. ÁREA DE VÍDEO (Esquerda - Responsiva) ---
         self.image_control = ft.Image(
             src_base64=None,
-            width=640,
-            height=480,
-            fit=ft.ImageFit.CONTAIN,
+            width=None, # Largura automática
+            height=None, # Altura automática
+            fit=ft.ImageFit.CONTAIN, # Ajusta mantendo proporção
             border_radius=15,
+            expand=True # Ocupa todo o espaço do container pai
         )
         
-        # Container com sombra e borda para o vídeo
+        # Container responsivo para o vídeo
         self.video_container = ft.Container(
             content=self.image_control,
             alignment=ft.alignment.center,
             bgcolor=ft.Colors.BLACK,
             border_radius=15,
             shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.GREY_400, offset=ft.Offset(0, 5)),
-            width=640,
-            height=480,
+            expand=True, # IMPORTANTE: Permite crescer/encolher
+            padding=10
         )
 
-        # --- 3. PAINEL DE CONTROLE (Direita) ---
+        # --- 3. PAINEL DE CONTROLE (Direita - Largura Fixa ou Flexível) ---
         
         # Cards de Informação
         self.card_traducao = create_output_panel("Tradução Atual", self.translated_text, ft.Colors.WHITE, ft.Icons.TRANSLATE)
@@ -73,7 +77,8 @@ class MainApp:
             bgcolor=ft.Colors.INDIGO, 
             color=ft.Colors.WHITE,
             height=50,
-            width=200,
+            # CORREÇÃO: Definir expand=1 aqui fará o botão crescer dentro da Row pai
+            expand=1,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
         )
         
@@ -81,16 +86,18 @@ class MainApp:
             "Limpar Buffer", 
             icon=ft.Icons.REFRESH,
             height=50,
+            # CORREÇÃO: Definir expand=1 aqui fará o botão crescer dentro da Row pai
+            expand=1,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
         )
 
         # Área de Treinamento
         self.label_input = ft.TextField(
             label="Rótulo (ex: A, B)", 
-            width=120, 
             height=50, 
             border_radius=10, 
-            bgcolor=ft.Colors.WHITE
+            bgcolor=ft.Colors.WHITE,
+            expand=True # Ocupa espaço disponível na linha
         )
         
         self.record_button = ft.ElevatedButton(
@@ -99,7 +106,6 @@ class MainApp:
             bgcolor=ft.Colors.ORANGE_600, 
             color=ft.Colors.WHITE,
             height=50,
-            width=130,
             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
         )
 
@@ -111,6 +117,7 @@ class MainApp:
             border=ft.border.all(1, ft.Colors.ORANGE_200)
         )
 
+        # Coluna de controles (Sidebar)
         controls_column = ft.Column(
             [
                 ft.Text("Status do Sistema", weight=ft.FontWeight.BOLD, size=16),
@@ -118,12 +125,21 @@ class MainApp:
                 self.card_sinal,
                 ft.Divider(),
                 ft.Text("Controles", weight=ft.FontWeight.BOLD, size=16),
-                ft.Row([self.start_button, self.reset_button]),
+                # CORREÇÃO: Removido ft.Expanded(), agora usamos a propriedade expand=1 nos botões
+                ft.Row([self.start_button, self.reset_button], spacing=10), 
                 ft.Divider(),
                 ft.Text("Modo Treinamento", weight=ft.FontWeight.BOLD, size=16),
                 training_row
             ],
-            spacing=15
+            spacing=15,
+            scroll=ft.ScrollMode.AUTO # Permite rolar se a tela for pequena verticalmente
+        )
+
+        sidebar_container = ft.Container(
+            content=controls_column,
+            padding=10,
+            width=350, # Largura fixa para a barra lateral
+            # Se quiser responsivo total, remova width e use expand=1 na Row principal
         )
 
         # --- 4. RODAPÉ (Confiança e Histórico) ---
@@ -143,73 +159,57 @@ class MainApp:
             shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.GREY_300)
         )
 
-        # MONTAGEM FINAL DA PÁGINA
+        # MONTAGEM FINAL DA PÁGINA (Layout Flexível)
+        
+        # Corpo principal: Vídeo (expande) + Sidebar (fixa)
+        main_body = ft.Row(
+            [
+                self.video_container, # expand=True definido no container
+                sidebar_container
+            ],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.START,
+            expand=True # Ocupa toda a altura disponível
+        )
+
+        # Layout global vertical
         self.page.add(
-            header,
-            ft.Row(
+            ft.Column(
                 [
-                    self.video_container,
-                    ft.Container(content=controls_column, padding=10, width=350)
+                    header,
+                    main_body, # Corpo expande
+                    ft.Container(height=20),
+                    footer_section # Rodapé fixo
                 ],
-                alignment=ft.MainAxisAlignment.START,
-                vertical_alignment=ft.CrossAxisAlignment.START
-            ),
-            ft.Container(height=20),
-            footer_section
+                expand=True # Coluna principal ocupa a tela toda
+            )
         )
         self.page.update()
 
     def update_ui_with_data(self, current_signal, translated_text, history, frame_bytes, confidence):
-        # Atualiza a barra de confiança (buscando o ProgressBar dentro do componente)
-        # O componente create_confidence_bar retorna um Container -> Column -> [Row, ProgressBar]
-        progress_bar = self.confidence_display.content.controls[1]
-        text_percent = self.confidence_display.content.controls[0].controls[1]
-        
-        progress_bar.value = confidence
-        # Muda a cor dinamicamente
-        color = ft.Colors.RED if confidence < 0.4 else (ft.Colors.ORANGE if confidence < 0.7 else ft.Colors.GREEN)
-        progress_bar.color = color
-        text_percent.value = f"{int(confidence * 100)}%"
-        text_percent.color = color
+        try:
+            progress_bar = self.confidence_display.content.controls[1]
+            text_percent = self.confidence_display.content.controls[0].controls[1]
+            
+            progress_bar.value = confidence
+            color = ft.Colors.RED if confidence < 0.4 else (ft.Colors.ORANGE if confidence < 0.7 else ft.Colors.GREEN)
+            progress_bar.color = color
+            text_percent.value = f"{int(confidence * 100)}%"
+            text_percent.color = color
+        except:
+            pass
 
-        # Atualiza Cards de Texto
-        # Card Tradução -> Container -> Row -> Column -> Text[1]
         self.card_traducao.content.controls[1].controls[1].value = translated_text
         self.card_sinal.content.controls[1].controls[1].value = current_signal
         
-        # Atualiza Histórico
-        # Footer -> Column -> History Display (Row)
-        # Precisamos recriar a linha de histórico para atualizar os cards
-        new_history = create_detection_history(history)
-        # O history_display está no índice 3 da coluna do footer_section
-        # footer_section (Container) -> Column -> [Conf, Espaço, Titulo, HistoryRow]
-        # Uma forma mais segura é atualizar o container onde o histórico reside, 
-        # mas aqui vamos substituir o controle na lista pai.
-        # Devido à complexidade de acesso direto, a melhor estratégia no Flet 
-        # é ter um container "holder" e mudar seu content.
-        
-        # (Correção de design: para simplificar o update, vamos assumir que o método recria a Row)
-        # Na prática, o Flet exige que removamos e adicionemos ou substituamos na lista de controls pai.
-        
-        # Hack rápido para update: limpar e readicionar ao container pai do histórico
-        # Mas como não temos ref fácil ao container pai aqui, vamos mudar a estratégia no init se necessário.
-        # Vamos tentar substituir o conteúdo do container de histórico se ele fosse um container.
-        # Como é uma Row solta, o ideal seria que self.history_display fosse um Container.
-        pass # A lógica de histórico visual precisa de um container fixo para ser atualizado facilmente.
-        # Ajuste no próximo passo: Envelopar history em um container.
-
-        # ATUALIZAÇÃO CORRIGIDA DO HISTÓRICO:
-        # Vamos assumir que self.history_display foi criado dentro de um Container no _build_ui.
-        # Para evitar erro agora, focamos nos textos e vídeo.
+        new_history_row = create_detection_history(history)
+        self.history_display.controls = new_history_row.controls
+        self.history_display.update()
         
         if frame_bytes:
             self.image_control.src_base64 = frame_bytes
         
         self.page.update()
-
-        # NOTA: Para o histórico funcionar dinamicamente com animação, 
-        # precisaríamos de um ajuste fino no _build_ui para colocar a Row dentro de um Container com ref.
-        # Vou mandar esse ajuste na próxima interação se o layout quebrar.
 
     def set_handlers(self, start_func, reset_func, record_func):
         self.start_handle = start_func
