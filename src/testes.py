@@ -1,3 +1,11 @@
+"""
+Docstring para testes
+
+Este arquivo serviu apenas no commit inicial para testar a tecnologia na máquina local
+
+Ele atualmente não tem muita utilidade, uma vez que ele serviu apenas para testar a GPU e a camera
+"""
+
 import cv2
 import torch
 import time
