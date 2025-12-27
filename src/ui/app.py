@@ -7,7 +7,7 @@ class MainApp:
         self.page.title = "Sistema de Alfabetização em Libras"
         self.page.theme_mode = ft.ThemeMode.LIGHT
         
-        # Removemos dimensões fixas da janela para permitir maximizar livremente
+        # Removido dimensões fixas da janela para permitir maximizar livremente
         # self.page.window_width = 1200 
         # self.page.window_height = 900
         
