@@ -1,3 +1,10 @@
+"""
+Gambiarra para gerar um icon do projeto
+
+!!! Está em desuso !!!
+
+"""
+
 import os
 from PIL import Image, ImageDraw
 
