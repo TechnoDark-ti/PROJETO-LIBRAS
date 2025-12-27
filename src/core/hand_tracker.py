@@ -19,7 +19,6 @@ class HandTracker:
             ):
         
         """Inicializa o detector de mãos usando CVZONE (MediaPipe)"""
-        # CORREÇÃO 1: Renomeado para self.detector
         self.detector = HandDetector(
             staticMode=static_mode,
             maxHands=max_hands,
@@ -35,7 +34,6 @@ class HandTracker:
             return [], None
         
         try:
-            # CORREÇÃO 2: Alterado de findDistance para findHands (método correto para detecção)
             hands, annotated_frame = self.detector.findHands( 
                 frame, draw=True
             )

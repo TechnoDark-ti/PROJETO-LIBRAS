@@ -3,7 +3,7 @@ import torch.nn as nn
 import os
 import numpy as np
 
-# 1. Definição da Rede (Tem que ser IDÊNTICA ao train_model.py)
+# 1. Definição da Rede (Tinha que ser IDÊNTICA ao train_model.py)
 class LibrasNet(nn.Module):
     def __init__(self, input_size, num_classes):
         super(LibrasNet, self).__init__()
@@ -41,12 +41,12 @@ class SignalClassifier:
                 self.model = LibrasNet(input_size, len(self.classes))
                 self.model.load_state_dict(checkpoint['model_state'])
                 self.model.eval()
-                print(f"✅ PyTorch: Modelo carregado! Classes conhecidas: {self.classes}")
+                print(f"PyTorch: Modelo carregado! Classes conhecidas: {self.classes}")
             except Exception as e:
-                print(f"❌ Erro ao carregar modelo: {e}")
+                print(f"Erro ao carregar modelo: {e}")
                 self.model = None
         else:
-            print(f"⚠️ Modelo não encontrado em {self.model_path}. Usando regras manuais.")
+            print(f"Modelo não encontrado em {self.model_path}. Usando regras manuais.")
 
     def classify(self, landmarks):
         """

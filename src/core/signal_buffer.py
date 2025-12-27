@@ -1,5 +1,3 @@
-# core/signal_buffer.py
-
 from collections import deque, Counter
 
 class SignalBuffer:

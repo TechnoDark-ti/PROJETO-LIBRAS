@@ -1,6 +1,4 @@
-# core/translator.py (REATORADO)
-
-# Não precisa mais de numpy!
+# Não estamos mais utilizando o numpy como gambiarra!
 
 class Translator:
     """

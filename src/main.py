@@ -1,6 +1,11 @@
 """
 @Author: Márcio Moda
 This code is Licensed by GPL V.3
+
+Este arquivo é o main do projeto. Ele chama todas as stacks construidas em CORE e UI
+
+é ele que instancia os objetos, faz o tratamento de imagens + IA dividindo com o Threading e
+faz a magia acontecer. Não há lógica aqui, apenas instanciamentos.
 """
 
 import time

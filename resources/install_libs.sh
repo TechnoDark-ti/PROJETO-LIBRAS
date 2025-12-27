@@ -1,3 +1,6 @@
+# Arquivo para instalar as bibliotecas necessárias do python para o escopo do projeto
+# OBS: Feito para rodar em ambientes derivados do Debian/Ubuntu
+
 pip3 install opencv-python opencv-contrib-python cvzone mediapipe flet numpy pillow matplotlib
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
