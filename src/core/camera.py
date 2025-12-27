@@ -10,7 +10,7 @@ class Camera:
     - Ler frames
     - Encerrar corretamente o dispositivo
 
-    Não contém:
+    Não contém e nem espere:
     - Lógica de negócio
     - Processamento de imagem
     - Integração com ML ou UI
