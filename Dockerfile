@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Usa a imagem oficial do Python baseada em Debian Slim (leve e compatível com Ubuntu)
-FROM python:3.11-slim-buster
+FROM python:3.11-slim-bookworm
 
 # Variáveis de ambiente para evitar arquivos .pyc e logs presos no buffer
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -41,5 +41,5 @@ COPY . .
 EXPOSE 8443
 
 # Comando de execução: Inicia o Flet em modo Web na porta 8443
-#CMD ["flet", "run", "--web", "--port", "8443", "src/main.py"]
-CMD ["python3", "-m", "flet", "--web", "--port", "8443", "src/main.py"]
+CMD ["flet", "run", "--web", "--port", "8443", "src/main.py"]
+#CMD ["python3", "-m", "flet", "--web", "--port", "8443", "src/main.py"]
