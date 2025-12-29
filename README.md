@@ -62,6 +62,44 @@ pip install -r requirements.txt
 
 Nota para usuários Linux: É necessário instalar bibliotecas de sistema para o Flet/OpenCV. Consulte resources/install_libs
 
+
+### 🐳 Executando com Docker
+
+Este projeto está containerizado para facilitar a execução em qualquer ambiente, garantindo que todas as dependências (Python, PyTorch, OpenCV, Mediapipe) sejam configuradas automaticamente.
+
+#### Pré-requisitos
+* [Docker](https://docs.docker.com/get-docker/) instalado.
+* Webcam conectada (necessária para a tradução em tempo real).
+
+#### Opção 1: Baixar imagem pronta do Docker Hub
+Se você deseja apenas executar a aplicação:
+~~~bash
+docker pull technodark/libras-tcc:latest
+~~~
+~~~bash
+docker run -p 8443:8443 --device=/dev/video0:/dev/video0 seu-usuario/libras-tcc:latest
+~~~
+
+#### Opção 2: Construir a imagem localmente
+Se você alterou o código e deseja testar localmente:
+
+Construa a imagem:
+
+~~~Bash
+
+docker build -t libras-tcc .
+~~~
+Execute o container:
+
+~~~Bash
+docker run -p 8443:8443 --device=/dev/video0:/dev/video0 libras-tcc
+~~~
+
+Nota importante: > * A flag --device=/dev/video0:/dev/video0 é obrigatória para que o container tenha permissão de acessar a sua webcam.
+
+Após rodar, acesse no seu navegador: http://localhost:8443
+
+
 ### Como Executar
 
 Para iniciar o sistema principal:
