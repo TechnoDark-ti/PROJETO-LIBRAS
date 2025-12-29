@@ -223,11 +223,7 @@ class MainApp:
         self.page.update()
 
 def start_app(target_main):
-    ft.app(target=target_main,
-           view=ft.AppView.WEB_BROWSER, # Teste para o navegador
-            port=8443, # Porta SSL
-            host="0.0.0.0" # Permite que a gente acesse via docker
-           )
+    ft.app(target=target_main)
 
 if __name__ == "__main__":
     ft.app(target=lambda page: MainApp(page))
