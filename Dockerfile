@@ -10,14 +10,14 @@ ENV PYTHONUNBUFFERED=1
 # Instalação de dependências do sistema (User Space)
 # libgl1-mesa-glx: Necessário para o OpenCV (cv2)
 # libgtk-3-0, gstreamer: Necessários para a interface gráfica do Flet
-# RUN apt update && apt install -y \
-#     libgl1-mesa-glx \
-#     libglib2.0-0 \
-#     libgtk-3-0 \
-#     libgstreamer1.0-0 \
-#     gstreamer1.0-plugins-base \
-#     && apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libgstreamer1.0-0 \
+    gstreamer1.0-plugins-base \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Define o diretório de trabalho dentro do contentor
 WORKDIR /app
