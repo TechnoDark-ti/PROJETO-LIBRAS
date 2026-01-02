@@ -4,12 +4,27 @@
 pip3 install opencv-python opencv-contrib-python cvzone mediapipe flet numpy pillow matplotlib
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
-
+# instalar o virtualenv no Ubuntu 22.04 LTS 
 #sudo apt install python3-pip python3-virtualenv -y
 sudo apt install -y libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
                     libmpv-dev mpv libmpv2
 
 sudo ln -s /usr/lib/x86_64-linux-gnu/libmpv.so /usr/lib/libmpv.so.1
+
+# Instalar o python3.11.2 no Debian 13
+sudo apt update
+sudo apt install -y curl  build-essential libssl-dev zlib1g-dev \
+                    libbz2-dev libreadline-dev libsqlite3-dev \
+                    libncursesw5-dev xz-utils tk-dev libxml2-dev\
+                    libffi-dev liblzma-dev
+
+curl https://pyenv.run | bash
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+
+pyenv install 3.11.2
 
 #install docker
 sudo apt install apt-transport-https ca-certificates curl software-properties-common
