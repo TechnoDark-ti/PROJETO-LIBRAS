@@ -2,59 +2,54 @@
 # Script para geração de AppImage - Estrutura Centralizada em resources/
 # Executar a partir da raiz do projeto: ./resources/appimage.sh
 
-APP_NAME="TradutorLibras"
-BUILD_DIR="build/linux"
-APP_DIR="resources/dist/AppDir"
-TOOL_PATH="resources/appimagetool"
+# Usando o pyinstaller nativo do pip
 
-echo "Iniciando build nativo do Flet..."
-# O comando aponta para a PASTA src. O Flet busca o main.py lá dentro.
-flet build linux src
+pyinstaller   --name mylibrasapp   --onedir \
+              --windowed   --collect-all mediapipe  \
+              --collect-all cvzone   --collect-all torch  \
+              --hidden-import=cv2   --add-data "src/models:libras_model" \
+              --add-data "src/ui:ui"  \
+               src/main.py
+#OBS: Não se esqueça de testar o app antes de empacotar no appimage 
 
-echo "Organizando estrutura AppDir..."
-# Limpa builds anteriores para evitar conflitos
-rm -rf $APP_DIR
-mkdir -p $APP_DIR/usr/bin
-mkdir -p $APP_DIR/usr/share/icons/hicolor/256x256/apps
+#Criando o diretório para empacotar
+mkdir -p MyLibrasApp.AppDir/usr/bin
+cp -r dist/mylibrasapp/ MyLibrasApp.AppDir/usr/bin/
 
-# Verifica se o binário foi gerado
-if [ -d "$BUILD_DIR" ]; then
-    cp -r $BUILD_DIR/* $APP_DIR/usr/bin/
-#else
-    #echo "Erro: Falha na compilação. Rode o install_toolchain.sh primeiro."
-    #exit 1
-fi
+#Criando os arquivos necessários para o appimage rodar 
+touch MyLibras.AppDir/MyLibrasApps.desktop
+touch MyLibras.AppDir/AppRun
 
-# Integração do Ícone
-if [ -f "resources/assets/icon_high_res.png" ]; then
-    cp resources/assets/icon_high_res.png $APP_DIR/usr/share/icons/hicolor/256x256/apps/$APP_NAME.png
-    cp resources/assets/icon_high_res.png $APP_DIR/.DirIcon
-fi
+#inserindo os parâmetros
+echo "#!/bin/bash
+HERE="$(dirname "$(readlink -f "$0")")"
 
-# Criação do Desktop Entry
-cat <<EOF > $APP_DIR/$APP_NAME.desktop
-[Desktop Entry]
-Name=$APP_NAME
-Exec=main
-Icon=$APP_NAME
+export APPDIR="$HERE"
+export LD_LIBRARY_PATH="$HERE/usr/bin/mylibrasapp/_internal:$LD_LIBRARY_PATH"
+
+exec "$HERE/usr/bin/mylibrasapp/mylibrasapp" "$@"
+" > MyLibrasApps.AppRun/AppRun
+
+echo "[Desktop Entry]
 Type=Application
-Categories=Education;Science;
-Comment=Tradutor de Libras em Tempo Real
+Name=AlfaLibras
+Exec=mylibrasapp
+Icon=MyLibrasApp
+Categories=Education;Accessibility;
 Terminal=false
-EOF
+" > MyLibrasApp.AppDir/MyLibrasApp.desktop
 
-# Download do appimagetool se necessário
-if [ ! -f "$TOOL_PATH" ]; then
-    echo "Baixando appimagetool..."
-    wget -O $TOOL_PATH https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage
-    chmod +x $TOOL_PATH
-fi
+#para caso o teu linux fudido e capado não tenha o libfuse2
+sudo apt install libfuse2
 
-echo "Empacotando AppImage..."
-# Link simbólico obrigatório para o AppImageKit
-ln -sf usr/bin/main $APP_DIR/AppRun
+#baixando a ferramenta para empacotar o appimage
+wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+chmod +x appimagetool-x86_64.AppImage
 
-# Execução do empacotamento
-ARCH=x86_64 ./$TOOL_PATH $APP_DIR
+#Empacotando o software
+./appimagetool-x86_64.AppImage MyLibrasApp.AppDir
+chmod 755 appimagetool-x86_64.AppImage
 
-echo "✅ AppImage gerado com sucesso na raiz do projeto!"
+
+#Seja Feliz :)
+./AlfaLibras-x86_64.AppImage
